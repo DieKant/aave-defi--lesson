@@ -1,6 +1,9 @@
 from scripts.helpful_scripts import get_account
 from brownie import config, network, interface
 from scripts.get_weth import get_weth
+from web3 import Web3
+# definiamo un amount
+amount = Web3.toWei(0.1, "ether")
 
 def main():
     account = get_account()
@@ -14,7 +17,23 @@ def main():
     # andiamo a prendere il contratto lending pool che è quello che si 
     # occupa di tute le azioni lato client
     lending_pool = get_lending_pool()
-    print(lending_pool)
+    # approviamo il deposito del nostro token erc20
+    approve_erc20(amount, lending_pool.address, erc20_address, account)
+
+# ci serve uno "spender" ossia chi dobbiamo approvare che spenda
+# i nostri token e quanto(amount) possono spendere del nostro token(erc20_address)
+# infine il nostro account per fare tutta l'operazione
+def approve_erc20(amount, spender, erc20_address, account):
+    print("approvo l'erc20")
+    erc20 = interface.IERC20(erc20_address)
+    tx = erc20.approve(spender, amount, {"from": account})
+    tx.wait(1)
+    print("approvato")
+
+
+
+
+
 
 def get_lending_pool():
     # prendiamo l'address del contratto lending pool dal contratto
