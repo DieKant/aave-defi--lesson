@@ -35,6 +35,34 @@ def main():
     )
     tx.wait(1)
     print("fatto")
+    # ...ma quanto possiamo prendere in presito
+    # con quello che abbiamo depositato, in modo
+    # che ci ritorni un health factor accettabile?
+    # per fare ciò dobbiamo prima prendere i nostri dati
+    # e usare quelli per calcolarlo con il metodo
+    # getUserAccountData dentro LendingPool
+    print("prendo l'eth che ho depositato, ho preso in prestito(debito), posso prendere in prestito...")
+    borrowable_eth, total_debt = get_borrowable_data(lending_pool, account)
+    print("fatto")
+
+def get_borrowable_data(lending_pool, account):
+    # questa funzione ritorna 6 valori
+    (
+        total_collateral_eth,
+        total_debt_eth,
+        avaiable_borrow_eth,
+        current_liquidation_threshold,
+        ltv,
+        health_factor
+    ) = lending_pool.getUserAccountData(account.address)
+    # questi valori sono in wei, rendiamoli numeri singoli leggibili
+    avaiable_borrow_eth = Web3.fromWei(avaiable_borrow_eth, "ether")
+    total_collateral_eth = Web3.fromWei(total_collateral_eth, "ether")
+    total_debt_eth = Web3.fromWei(total_debt_eth, "ether")
+    print(f"hai {total_collateral_eth} di eth depositato")
+    print(f"hai {total_debt_eth} eth preso in prestito")
+    print(f"puoi prendere in presito {avaiable_borrow_eth} eth")
+    return (float(avaiable_borrow_eth), float(total_debt_eth))
 
 
 # ci serve uno "spender" ossia chi dobbiamo approvare che spenda
