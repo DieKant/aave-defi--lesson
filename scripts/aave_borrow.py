@@ -44,6 +44,51 @@ def main():
     print("prendo l'eth che ho depositato, ho preso in prestito(debito), posso prendere in prestito...")
     borrowable_eth, total_debt = get_borrowable_data(lending_pool, account)
     print("fatto")
+    print("prendo in prestito DAI")
+    # dato che dobbiamo convertire ETH in DAI ci serve un price feed
+    dai_eth_price = get_asset_price(config["networks"][network.show_active()]["dai_eth_price_feed"])
+    print("fatto")
+    # moltiplichiamo il nostro valore di borrowable_eth per migliorare
+    # il nostro health factor, più è basso meglio è
+    # borrowable_eth -> borrwoable_dai * 95%
+    amount_dai_to_borrow = (1 / dai_eth_price) * (borrowable_eth * 0.95)
+    print(f"andiamo a prendere in prestito {amount_dai_to_borrow} DAI")
+    # lo andiamo a fare con la funzione borrow() di aave che ci richiede:
+    # l'address del contratto del token che vogliamo in prestito
+    # (lo troviamo su etherscan/aave docs per kovan)
+    # quanto chiedere in presito
+    # rateo di interesse che possiamo settare a 1 per lo STABLE e 2 per il VARIABLE
+    # refferalCode che è obsoleto mettiamo 0
+    # il nostro address
+    # infine from account
+    # e aspettiamo
+    dai_address = config["networks"][network.show_active()]["dai_token"]
+    borrow_tx = lending_pool.borrow(
+        dai_address,
+        Web3.toWei(amount_dai_to_borrow, "ether"),
+        1,
+        0,
+        account.address,
+        {"from": account}
+    )
+    borrow_tx.wait(1)
+    print("fatto")
+
+
+
+
+
+def get_asset_price(price_feed_address):
+    # prendo abi e address
+    dai_eth_price_feed = interface.AggregatorV3Interface(price_feed_address)
+    # se una funzione di solidiy ritorna più argomenti la puoi trattare
+    # come un vettore e prendere la variabile che ti serve a una posizione
+    # del "vettore" che torna indietro
+    latest_price = dai_eth_price_feed.latestRoundData()[1]
+    converted_latest_price = Web3.fromWei(latest_price, "ether")
+    print(f"il cambio DAI/ETH è di {converted_latest_price}")
+    return(float(converted_latest_price))
+
 
 def get_borrowable_data(lending_pool, account):
     # questa funzione ritorna 6 valori
@@ -61,6 +106,8 @@ def get_borrowable_data(lending_pool, account):
     total_debt_eth = Web3.fromWei(total_debt_eth, "ether")
     print(f"hai {total_collateral_eth} di eth depositato")
     print(f"hai {total_debt_eth} eth preso in prestito")
+    # posso prendere in prestito solo meno di quanto ho depositato per
+    # via del liquidation threshold (che è diverso da asset a asset)
     print(f"puoi prendere in presito {avaiable_borrow_eth} eth")
     return (float(avaiable_borrow_eth), float(total_debt_eth))
 
