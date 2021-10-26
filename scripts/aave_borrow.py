@@ -51,7 +51,7 @@ def main():
     # moltiplichiamo il nostro valore di borrowable_eth per migliorare
     # il nostro health factor, più è basso meglio è
     # borrowable_eth -> borrwoable_dai * 95%
-    amount_dai_to_borrow = (1 / dai_eth_price) * (borrowable_eth * 0.95)
+    amount_dai_to_borrow = (1 / dai_eth_price) * (borrowable_eth * 0.50)
     print(f"andiamo a prendere in prestito {amount_dai_to_borrow} DAI")
     # lo andiamo a fare con la funzione borrow() di aave che ci richiede:
     # l'address del contratto del token che vogliamo in prestito
@@ -73,10 +73,30 @@ def main():
     )
     borrow_tx.wait(1)
     print("fatto")
+    print("ripago gli asset prestati")
+    # quanto vogliamo ripagare, il contratto e il nostro addrerss
+    repay_all(amount, lending_pool, account)
+    print("fatto")
+    print("Tutti i punti del readme sono stati completati")
 
 
-
-
+def repay_all(amount, lending_pool, account):
+    # approviamo il trasferimento
+    approve_erc20(
+        Web3.toWei(amount, "ether"),
+        lending_pool,
+        config["networks"][network.show_active()]["dai_token"],
+        account
+    )
+    # ripaghiamo il prestito 
+    repay_tx = lending_pool.repay(
+        config["networks"][network.show_active()]["dai_token"],
+        amount,
+        1,
+        account.address,
+        {"from": account}
+    )
+    repay_tx.wait(1)
 
 def get_asset_price(price_feed_address):
     # prendo abi e address
